@@ -22,7 +22,7 @@ jobs:
           MYBT_PASSWORD: ${{ secrets.MYBT_PASSWORD }}
           PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
           WXPUSHER_APP_TOKEN: ${{ secrets.WXPUSHER_APP_TOKEN }}
-          WXPUSHER_UID: ${{ secrets.WXPUSHER_UID }}
+          WXPUSHER_UIDS: ${{ secrets.WXPUSHER_UIDS }}
           WX_TEST_APPID: ${{ secrets.WX_TEST_APPID }}
           WX_TEST_APP_SECRET: ${{ secrets.WX_TEST_APP_SECRET }}
           WX_TEST_TEMPLATE_ID: ${{ secrets.WX_TEST_TEMPLATE_ID }}

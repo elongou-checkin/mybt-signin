@@ -47,10 +47,11 @@ def pushplus_notify(ok, content):
     """Send signin result to WeChat via WxPusher (preferred) or PushPlus (fallback). Skipped when neither is configured."""
     title = "mybt 签到成功" if ok else "mybt 签到失败"
     sent = False
-    app_token, uid = env("WXPUSHER_APP_TOKEN", ""), env("WXPUSHER_UID", "")
-    if app_token and uid:
+    app_token = env("WXPUSHER_APP_TOKEN", "")
+    uids = [u.strip() for u in (env("WXPUSHER_UIDS", "") or "").split(",") if u.strip()]
+    if app_token and uids:
         try:
-            body = json.dumps({"appToken": app_token, "content": title + "\n" + content, "summary": title, "contentType": 1, "uids": [uid]}).encode("utf-8")
+            body = json.dumps({"appToken": app_token, "content": title + "\n" + content, "summary": title, "contentType": 1, "uids": uids}).encode("utf-8")
             req = urllib.request.Request("https://wxpusher.zjiecode.com/api/send/message", data=body, headers={"Content-Type": "application/json"})
             with urllib.request.urlopen(req, timeout=15) as resp:
                 result = json.loads(resp.read().decode("utf-8"))
@@ -62,7 +63,11 @@ def pushplus_notify(ok, content):
             log(f"❌ WxPusher 推送异常: {e}")
     token = env("PUSHPLUS_TOKEN", "")
     if not token:
-        if not sent: log("未配置 WxPusher/PushPlus，跳过通知")
+        if not sent:
+            # 必须显式告警：静默跳过会让「通知配置失效」伪装成正常，
+            # 工作流仍显示绿色但实际一条消息都没发出。
+            log("⚠️ 未配置任何可用通知渠道（WxPusher / PushPlus / 微信测试号），本次未发送通知。")
+            log("   若非预期，请检查仓库 Secrets：WXPUSHER_APP_TOKEN 与 WXPUSHER_UIDS。")
         return
     try:
         body = json.dumps({"token": token, "title": title, "content": content, "template": "txt"}).encode("utf-8")

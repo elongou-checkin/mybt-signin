@@ -48,7 +48,7 @@
 | Name | 说明 |
 |------|------|
 | `WXPUSHER_APP_TOKEN` | WxPusher AppToken（AT_ 开头），推荐，免实名免费 |
-| `WXPUSHER_UID` | WxPusher 用户 UID（UID_ 开头） |
+| `WXPUSHER_UIDS` | WxPusher 用户 UID（UID_ 开头）；多个用英文逗号分隔 |
 | `PUSHPLUS_TOKEN` | PushPlus token，需实名认证后方可发送 |
 | `WX_TEST_APPID` / `WX_TEST_APP_SECRET` / `WX_TEST_TEMPLATE_ID` / `WX_TEST_OPENID` | 微信公众平台测试号模板消息 |
 
@@ -60,10 +60,11 @@
 2. **WxPusher**（推荐）：免费、免实名，消息内容在 WxPusher App 内直接可见。配置步骤：
    1. 登录 [wxpusher.zjiecode.com](https://wxpusher.zjiecode.com) → 应用管理 → 创建应用，复制 `APP_TOKEN`
    2. 在 WxPusher App 中关注该应用
-   3. 配置 secrets：`WXPUSHER_APP_TOKEN` 与 `WXPUSHER_UID`（UID 可通过接口 `GET /api/fun/wxuser?appToken=AT_xxx` 查询）
+   3. 配置 secrets：`WXPUSHER_APP_TOKEN` 与 `WXPUSHER_UIDS`（UID 可通过接口 `GET /api/fun/wxuser/v2?appToken=AT_xxx&page=1&pageSize=100` 查询）
 3. **PushPlus**：需在 [verify.pushplus.plus](https://verify.pushplus.plus) 完成实名认证，否则返回 code 905
 
-都不配置时跳过通知，不影响签到本身。
+都不配置时不发送通知，不影响签到本身；但日志会输出 `⚠️ 未配置任何可用通知渠道` 告警，
+以免「通知配置失效」被误认为一切正常。
 
 ### 3. 启用 Actions
 
