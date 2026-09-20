@@ -193,12 +193,37 @@ class CasdoorLogin:
             else: raise RuntimeError(f"cannot extract oauth code after login: final={url2} body={text2[:200]!r}")
         callback=f"{self.base_url}/api/auth/casdoor/callback?" + urllib.parse.urlencode({"code":code,"state":state})
         url3, status3, headers3, body3 = self.http.request(callback)
+        final_url=url3
         token=self._extract_token(url3, body3)
         if not token:
             loc=headers3.get("Location") or headers3.get("location")
-            if loc: token=self._extract_token(urllib.parse.urljoin(self.base_url+"/", loc), b"")
+            if loc:
+                final_url=urllib.parse.urljoin(self.base_url+"/", loc)
+                token=self._extract_token(final_url, b"")
+        if not token:
+            login_code=self._extract_param(final_url, "login_code") or self._extract_param(url3, "login_code")
+            if login_code:
+                log("检测到 login_code 回调，改用 POST /auth/session 换取 token")
+                token=self._exchange_login_code(login_code)
         if not token: raise RuntimeError(f"callback did not return token. final={url3} status={status3} body={body3[:200]!r}")
         return token, self._user_id_from_token(token)
+    def _exchange_login_code(self, login_code):
+        """站点回调已改为下发 login_code，需再调 /auth/session 换取 token。"""
+        _, status, _, body = self.http.request(f"{self.base_url}/api/auth/session", method="POST",
+            data={"login_code":login_code}, headers={"Origin":self.base_url,"Referer":self.base_url+"/login"})
+        text=body.decode("utf-8","replace")
+        try: payload=json.loads(text or "{}")
+        except json.JSONDecodeError: raise RuntimeError(f"session exchange non-json HTTP {status}: {text[:300]}")
+        if status and status >= 400: raise RuntimeError(f"session exchange failed HTTP {status}: {text[:300]}")
+        token=payload.get("token") if isinstance(payload, dict) else None
+        if not token and isinstance(payload, dict) and isinstance(payload.get("data"), dict):
+            token=payload["data"].get("token")
+        if not token: raise RuntimeError(f"session exchange returned no token: {text[:300]}")
+        return str(token).removeprefix("Bearer ").strip()
+    @staticmethod
+    def _extract_param(url, key):
+        q=urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
+        return (q.get(key) or [""])[0].strip()
     @staticmethod
     def _extract_token(url, body):
         q=urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
